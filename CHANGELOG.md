@@ -1,4 +1,13 @@
-# grunt-zip changelog
+# Changelog
+
+## [1.1.0](https://github.com/unabandoned/grunt-zip/compare/grunt-zip-v1.0.0...grunt-zip-v1.1.0) (2026-10-08)
+
+
+### Features
+
+* onboard as @unabandoned/grunt-zip with zero runtime dependencies ([#1](https://github.com/unabandoned/grunt-zip/issues/1)) ([ead59b6](https://github.com/unabandoned/grunt-zip/commit/ead59b6b277f4582d6e7a34c55b611c70e1a737f))
+
+## grunt-zip changelog
 1.0.0 - Upgraded to jszip@3.8.0 to fix GitHub vulnerability warning and #55
 
 0.20.0 - Upgraded to jszip@2.7.0 to fix GitHub vulnerability warning and #54
