@@ -1,7 +1,7 @@
 {
   "name": "@unabandoned/grunt-zip",
   "description": "Zip and unzip files via a grunt plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "homepage": "https://github.com/unabandoned/grunt-zip#readme",
   "author": {
     "name": "Todd Wolfson",
