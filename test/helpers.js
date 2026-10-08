@@ -4,7 +4,7 @@ var assert = require('assert');
 var fs = require('fs');
 var path = require('path');
 var childProcess = require('child_process');
-var zipfile = require('../lib/zipfile');
+var JSZip = require('jszip');
 
 var gruntBin = require.resolve('grunt/bin/grunt');
 
@@ -41,14 +41,18 @@ exports.assertNoFile = function (filename) {
 };
 
 // Summarise an archive as [name, isDir, content] in archive order
-exports.entries = function (base, filename) {
-  return zipfile.readZip(exports.read(base, filename), {checkCRC32: true}).map(function (entry) {
-    return [entry.name, entry.dir, entry.data.toString('latin1')];
-  });
+exports.entries = async function (base, filename) {
+  var zip = await JSZip.loadAsync(exports.read(base, filename), {checkCRC32: true});
+  var out = [];
+  for (var name of Object.keys(zip.files)) {
+    var entry = zip.files[name];
+    out.push([name, entry.dir, (await entry.async('nodebuffer')).toString('latin1')]);
+  }
+  return out;
 };
 
 // Upstream compared zips by edit distance because jszip stamps the current
 // time into each entry; compare the decoded entries instead.
-exports.assertSameArchive = function (filename) {
-  assert.deepStrictEqual(exports.entries('actual', filename), exports.entries('expected', filename));
+exports.assertSameArchive = async function (filename) {
+  assert.deepStrictEqual(await exports.entries('actual', filename), await exports.entries('expected', filename));
 };

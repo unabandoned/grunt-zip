@@ -2,10 +2,9 @@
 
 > **This is a maintained fork of [grunt-zip][upstream], published as
 > [`@unabandoned/grunt-zip`][pkg].** Upstream's last release was 1.0.0 in
-> 2023. The tasks and options are unchanged, but the package has no runtime
-> dependencies: zip reading and writing is done with `node:zlib` instead of
-> jszip, and the grunt 0.3 shim `grunt-retro` is gone, so it needs grunt 1.x
-> and Node.js 22.12 or newer. See [.unabandoned.yml](.unabandoned.yml).
+> 2023. The tasks and options are unchanged. The grunt 0.3 shim `grunt-retro`
+> is gone and jszip tracks its current release, so it needs grunt 1.x and
+> Node.js 22.12 or newer. See [.unabandoned.yml](.unabandoned.yml).
 
 [upstream]: https://github.com/twolfson/grunt-zip
 [pkg]: https://www.npmjs.com/package/@unabandoned/grunt-zip
