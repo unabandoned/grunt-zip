@@ -1,11 +1,10 @@
 module.exports = function (grunt) {
-  // Load in legacy config
+  // Load in the shared test config
   require('./grunt')(grunt);
 
-  // Add in 0.4 specific tests
-  var _ = grunt.util._;
+  // Destination templating (twolfson/grunt-zip#6)
   var zipConfig = grunt.config.get('zip');
-  grunt.config.set('zip', _.extend(zipConfig, {
-    'actual/template_zip/<%= pkg.name %>.zip': ['test_files/file.js']
+  grunt.config.set('zip', Object.assign(zipConfig, {
+    'actual/template_zip/<%= pkg.version %>.zip': ['test_files/file.js']
   }));
 };

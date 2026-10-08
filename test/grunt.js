@@ -2,14 +2,6 @@ var path = require('path');
 
 module.exports = function (grunt) {
 
-  // TODO:
-  // // Add in 0.4 specific tests
-  // var _ = grunt.util._;
-  // var zipConfig = grunt.config.get('zip');
-  // grunt.config.set('zip', _.extend(zipConfig, {
-  //   'actual/template_zip/<%= pkg.name %>.zip': ['test_files/file.js']
-  // }));
-
   // Project configuration.
   grunt.initConfig({
     // DEV: `pkg` is used for template test
@@ -48,6 +40,17 @@ module.exports = function (grunt) {
         src: ['test_files/dot/.test/hello.js', 'test_files/dot/test/.examplerc'],
         dest: 'actual/dot_zip/file.zip',
         dot: true
+      },
+      deflate: {
+        src: 'test_files/nested/**/*',
+        dest: 'actual/deflate_zip/file.zip',
+        compression: 'DEFLATE'
+      },
+      'cwd-glob': {
+        // the shape CyberChef uses: `cwd` plus patterns rooted above it
+        cwd: 'test_files/nested/',
+        src: ['test_files/nested/**/*', '!test_files/nested/world.txt'],
+        dest: 'test_files/nested/../../actual/cwd_glob_zip/file.zip'
       },
       'skip-files': {
         src: ['test_files/nested/hello.js', 'test_files/nested/nested2/hello10.txt'],
@@ -115,6 +118,19 @@ module.exports = function (grunt) {
         src: 'actual/skip_files_zip/file.zip',
         dest: 'actual/skip_files_zip/unzip'
       },
+      'test-zip-deflate': {
+        src: 'actual/deflate_zip/file.zip',
+        dest: 'actual/deflate_zip/unzip'
+      },
+      'bad-crc': {
+        src: 'actual/bad_crc.zip',
+        dest: 'actual/bad_crc'
+      },
+      'bad-crc-unchecked': {
+        src: 'actual/bad_crc.zip',
+        dest: 'actual/bad_crc_unchecked',
+        checkCRC32: false
+      },
       symlinks: {
         src: 'test_files/symlinks.zip',
         dest: 'actual/symlinks'
@@ -124,9 +140,4 @@ module.exports = function (grunt) {
 
   // Load local tasks.
   grunt.loadTasks('../tasks');
-
-  // Load grunt contrib clean (chdir for 0.4)
-  process.chdir('..');
-  grunt.loadNpmTasks('grunt-contrib-clean');
-  process.chdir(__dirname);
 };
