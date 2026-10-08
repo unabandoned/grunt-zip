@@ -21,12 +21,12 @@ describe('A grunt `zip` task', function () {
     ]);
   });
 
-  it('zips a single file', function () {
-    h.assertSameArchive('single_zip/file.zip');
+  it('zips a single file', async function () {
+    await h.assertSameArchive('single_zip/file.zip');
   });
 
-  it('zips multiple files', function () {
-    h.assertSameArchive('multi_zip/file.zip');
+  it('zips multiple files', async function () {
+    await h.assertSameArchive('multi_zip/file.zip');
   });
 
   it('does not corrupt a binary file (image)', function () {
@@ -61,9 +61,9 @@ describe('A grunt `zip` task', function () {
     h.assertNoFile('skip_files_zip/unzip/test_files/nested/nested2/hello10.txt');
   });
 
-  it('compresses with DEFLATE and extracts the same files', function () {
-    var stored = h.entries('actual', 'nested_zip/file.zip');
-    var deflated = h.entries('actual', 'deflate_zip/file.zip');
+  it('compresses with DEFLATE and extracts the same files', async function () {
+    var stored = await h.entries('actual', 'nested_zip/file.zip');
+    var deflated = await h.entries('actual', 'deflate_zip/file.zip');
     assert.deepStrictEqual(deflated, stored);
     var archive = h.read('actual', 'deflate_zip/file.zip');
     var header = archive.indexOf('test_files/nested/hello.js') - 30;
@@ -74,8 +74,8 @@ describe('A grunt `zip` task', function () {
       .equals(h.read('test_files', 'nested/glyphicons-halflings.png')));
   });
 
-  it('zips patterns rooted above `cwd`, with negations, the way CyberChef does', function () {
-    var names = h.entries('actual', 'cwd_glob_zip/file.zip').map(function (e) { return e[0]; });
+  it('zips patterns rooted above `cwd`, with negations, the way CyberChef does', async function () {
+    var names = (await h.entries('actual', 'cwd_glob_zip/file.zip')).map(function (e) { return e[0]; });
     assert.deepStrictEqual(names, [
       'nested2/',
       'glyphicons-halflings.png',

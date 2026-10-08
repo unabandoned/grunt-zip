@@ -14,10 +14,9 @@ summary: >-
 why-forked: >-
   CyberChef builds its downloadable standalone zip with it, and it was
   abandoned while carrying runtime dependencies on grunt-retro (a grunt 0.3
-  shim frozen since 2022) and jszip, whose own tree pulls in
-  readable-stream 2, pako, lie and setimmediate. The fork reads and writes
-  zips with node:zlib and drops grunt-retro, so it has zero runtime
-  dependencies; grunt stays a peer.
+  shim frozen since 2022) and an outdated jszip range. The fork drops
+  grunt-retro for the plain grunt 1.x API, tracks current jszip, and keeps
+  grunt as a peer.
 
 used-by:
   - consumer: TheTechNetwork/CyberChef
