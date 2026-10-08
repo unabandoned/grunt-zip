@@ -1,2 +1,3 @@
 #!/usr/bin/env node
-require('grunt').npmTasks('grunt-zip').cli();
+// Run grunt with this package's `zip` and `unzip` tasks loaded.
+require('grunt').cli({tasks: [require('path').join(__dirname, '..', 'tasks')]});

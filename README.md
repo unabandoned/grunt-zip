@@ -1,4 +1,14 @@
-# grunt-zip [![Build Status](https://app.travis-ci.com/twolfson/grunt-zip.svg?branch=master)](https://app.travis-ci.com/twolfson/grunt-zip)
+# grunt-zip
+
+> **This is a maintained fork of [grunt-zip][upstream], published as
+> [`@unabandoned/grunt-zip`][pkg].** Upstream's last release was 1.0.0 in
+> 2023. The tasks and options are unchanged, but the package has no runtime
+> dependencies: zip reading and writing is done with `node:zlib` instead of
+> jszip, and the grunt 0.3 shim `grunt-retro` is gone, so it needs grunt 1.x
+> and Node.js 22.12 or newer. See [.unabandoned.yml](.unabandoned.yml).
+
+[upstream]: https://github.com/twolfson/grunt-zip
+[pkg]: https://www.npmjs.com/package/@unabandoned/grunt-zip
 
 Zip and unzip files via a [grunt][] plugin
 
@@ -18,7 +28,13 @@ http://twolfson.com/2014-01-19-low-tech-dependency-management-via-grunt-tasks
 - Preservation of UNIX file permissions during extraction
 
 ## Getting Started
-`grunt-zip` can be installed via npm: `npm install grunt-zip`
+`grunt-zip` can be installed via npm: `npm install @unabandoned/grunt-zip`
+
+To keep `grunt.loadNpmTasks('grunt-zip')` working unchanged, install it under the original name:
+
+```json
+"grunt-zip": "npm:@unabandoned/grunt-zip@^1.1.0"
+```
 
 `grunt-zip` provides 2 grunt tasks: `zip` and `unzip`
 
@@ -154,7 +170,7 @@ zip: {
 ```
 
 #### Remaining options
-We allow for specifying the `DEFLATE` compression algorithm, base64 encoding, and including `dotfiles` (e.g. `.travis.yml`) via the following options:
+We allow for specifying the `DEFLATE` compression algorithm (the default is `STORE`), base64 encoding (accepted but ignored since 1.0.0; archives are always binary), and including `dotfiles` (e.g. `.travis.yml`) via the following options:
 
 ```js
 zip: {
@@ -225,7 +241,7 @@ unzip: {
 ```
 
 #### Remaining options
-With the following options we can disable the CRC32 check or decode from base64 encoding:
+With the following options we can disable the CRC32 check or decode from base64 encoding (accepted but ignored since 1.0.0):
 
 ```js
 zip: {
@@ -296,15 +312,7 @@ unzip: {
 ```
 
 ## Contributing
-In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint your code using [grunt][grunt] and test via `npm test`.
-
-## Donating
-Support this project and [others by twolfson][gittip] via [gittip][].
-
-[![Support via Gittip][gittip-badge]][gittip]
-
-[gittip-badge]: https://rawgithub.com/twolfson/gittip-badge/master/dist/gittip.png
-[gittip]: https://www.gittip.com/twolfson/
+In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Test via `npm test`.
 
 ## License
 Copyright (c) 2013 Todd Wolfson

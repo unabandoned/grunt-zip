@@ -8,40 +8,52 @@
 
 var fs = require('fs'),
     path = require('path'),
-    Zip = require('jszip'),
-    gruntRetro = require('grunt-retro');
+    zipfile = require('../lib/zipfile');
 module.exports = function(grunt) {
-  // Load and bind grunt-retro
-  grunt = gruntRetro(grunt);
+  // Resolve the target's source patterns and destination the way grunt-retro
+  // did: the first file mapping, with `src` left unexpanded. grunt's own
+  // expansion would apply our `cwd` option to the patterns, which is not
+  // what `cwd` means here.
+  function resolveTarget(task) {
+    var file = task.files.length !== 0 ? task.files[0].orig : {};
+    var data = task.data;
+    var options = (data && typeof data === 'object' && !Array.isArray(data)) ? data : {};
+    var src = file.src === undefined ? [] : [].concat(file.src);
+    return {src: src, dest: file.dest, options: options};
+  }
 
-  // Please see the grunt documentation for more information regarding task and
-  // helper creation: https://github.com/gruntjs/grunt/blob/master/docs/toc.md
+  function expand(options, src, filter) {
+    return grunt.file.expand(Object.assign({filter: filter}, options), src);
+  }
 
-  // ==========================================================================
-  // TASKS
-  // ==========================================================================
+  // Run an async task body, failing the task instead of leaving an unhandled
+  // rejection (which used to hang grunt or crash node).
+  function runAsync(task, fn) {
+    var done = task.async();
+    fn.call(task).then(done, function (err) {
+      grunt.log.error(err && err.stack || String(err));
+      done(false);
+    });
+  }
 
-  // Localize underscore
-  var _ = grunt.utils._;
+  grunt.registerMultiTask('zip', 'Zip files together', function() {
+    runAsync(this, zipTask);
+  });
 
-  grunt.registerMultiTask('zip', 'Zip files together', async function() {
+  async function zipTask() {
     // Localize variables
-    var done = this.async(),
-        file = this.file,
-        data = this.data,
-        src = file.src,
-        dest = file.dest,
+    var t = resolveTarget(this),
+        data = t.options,
+        src = t.src,
+        dest = t.dest,
         router = data.router;
 
-    // Fallback options (e.g. base64, compression)
-    _.defaults(data, {
-      base64: false
-    });
-
-    // Collect our file paths
+    // Collect our file paths (folders get a trailing `/`, as before)
     var globOptions = {dot: data.dot},
-        srcFolders = grunt.file.expandDirs(globOptions, src),
-        srcFiles = grunt.file.expandFiles(globOptions, src);
+        srcFolders = expand(globOptions, src, 'isDirectory').map(function (dir) {
+          return dir === '/' ? dir : dir + '/';
+        }),
+        srcFiles = expand(globOptions, src, 'isFile');
 
     // If there is no router
     if (!router) {
@@ -59,7 +71,7 @@ module.exports = function(grunt) {
     }
 
     // Generate our zipper
-    var zip = new Zip();
+    var zip = new zipfile.ZipWriter();
 
     // For each of the srcFolders
     srcFolders.forEach(function (folderpath) {
@@ -91,7 +103,7 @@ module.exports = function(grunt) {
     grunt.file.mkdir(destDir);
 
     // Write out the content
-    var output = await zip.generateAsync({type: 'nodebuffer', compression: data.compression});
+    var output = zip.generate({compression: data.compression});
     fs.writeFileSync(dest, output);
 
     // Fail task if errors were logged.
@@ -99,27 +111,23 @@ module.exports = function(grunt) {
 
     // Otherwise, print a success message.
     grunt.log.writeln('File "' + dest + '" created.');
-    done();
-  });
+  }
 
   function echo(a) {
     return a;
   }
-  grunt.registerMultiTask('unzip', 'Unzip files into a folder', async function() {
-    // Collect the filepaths we need
-    var done = this.async(),
-        file = this.file,
-        data = this.data,
-        src = file.src,
-        srcFiles = grunt.file.expand(src),
-        dest = file.dest,
-        router = data.router || echo;
+  grunt.registerMultiTask('unzip', 'Unzip files into a folder', function() {
+    runAsync(this, unzipTask);
+  });
 
-    // Fallback options (e.g. checkCRC32)
-    _.defaults(data, {
-      base64: false,
-      checkCRC32: true
-    });
+  async function unzipTask() {
+    // Collect the filepaths we need
+    var t = resolveTarget(this),
+        data = t.options,
+        srcFiles = grunt.file.expand(t.src),
+        dest = t.dest,
+        router = data.router || echo,
+        checkCRC32 = data.checkCRC32 !== false;
 
     // Iterate over the srcFiles
     var filesWritten = false;
@@ -128,17 +136,13 @@ module.exports = function(grunt) {
       var input = fs.readFileSync(filepath);
 
       // Unzip it
-      var zip = await Zip.loadAsync(input, {checkCRC32: data.checkCRC32});
-
-      // Pluck out the files
-      var files = zip.files,
-          filenames = Object.getOwnPropertyNames(files);
+      var entries = zipfile.readZip(input, {checkCRC32: checkCRC32});
 
       // Iterate over the files
-      for (var filename of filenames) {
+      for (var fileObj of entries) {
         // Find the content
-        var fileObj = files[filename],
-            content = await fileObj.async("nodebuffer"),
+        var filename = fileObj.name,
+            content = fileObj.data,
             routedName = router(filename);
 
         // If there is a file path (allows for skipping)
@@ -185,11 +189,10 @@ module.exports = function(grunt) {
 
     // Otherwise, print a success message.
     if (filesWritten) {
-      grunt.log.writeln('Created "' + this.file.dest + '" directory');
+      grunt.log.writeln('Created "' + dest + '" directory');
     } else {
-      grunt.log.writeln('No files were found in source. "' + this.file.dest + '" has not been created.');
+      grunt.log.writeln('No files were found in source. "' + dest + '" has not been created.');
     }
-    done();
-  });
+  }
 
 };
