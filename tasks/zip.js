@@ -8,7 +8,7 @@
 
 var fs = require('fs'),
     path = require('path'),
-    JSZip = require('jszip');
+    zipfile = require('../lib/zipfile');
 module.exports = function(grunt) {
   // Resolve the target's source patterns and destination the way grunt-retro
   // did: the first file mapping, with `src` left unexpanded. grunt's own
@@ -71,7 +71,7 @@ module.exports = function(grunt) {
     }
 
     // Generate our zipper
-    var zip = new JSZip();
+    var zip = new zipfile.ZipWriter();
 
     // For each of the srcFolders
     srcFolders.forEach(function (folderpath) {
@@ -103,7 +103,7 @@ module.exports = function(grunt) {
     grunt.file.mkdir(destDir);
 
     // Write out the content
-    var output = await zip.generateAsync({type: 'nodebuffer', compression: data.compression});
+    var output = zip.generate({compression: data.compression});
     fs.writeFileSync(dest, output);
 
     // Fail task if errors were logged.
@@ -136,17 +136,13 @@ module.exports = function(grunt) {
       var input = fs.readFileSync(filepath);
 
       // Unzip it
-      var zip = await JSZip.loadAsync(input, {checkCRC32: checkCRC32});
-
-      // Pluck out the files
-      var files = zip.files,
-          filenames = Object.getOwnPropertyNames(files);
+      var entries = zipfile.readZip(input, {checkCRC32: checkCRC32});
 
       // Iterate over the files
-      for (var filename of filenames) {
+      for (var fileObj of entries) {
         // Find the content
-        var fileObj = files[filename],
-            content = await fileObj.async('nodebuffer'),
+        var filename = fileObj.name,
+            content = fileObj.data,
             routedName = router(filename);
 
         // If there is a file path (allows for skipping)
