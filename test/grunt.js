@@ -134,6 +134,18 @@ module.exports = function (grunt) {
       symlinks: {
         src: 'test_files/symlinks.zip',
         dest: 'actual/symlinks'
+      },
+      'slip-dotdot': {
+        src: 'actual/slip_dotdot.zip',
+        dest: 'actual/slip/dest'
+      },
+      'slip-symlink': {
+        src: 'actual/slip_symlink.zip',
+        dest: 'actual/slip/dest'
+      },
+      'slip-through-symlink': {
+        src: 'actual/slip_through_symlink.zip',
+        dest: 'actual/slip/dest'
       }
     }
   });

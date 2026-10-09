@@ -8,7 +8,7 @@
 
 var fs = require('fs'),
     path = require('path'),
-    JSZip = require('jszip');
+    zipfile = require('../lib/zipfile');
 module.exports = function(grunt) {
   // Resolve the target's source patterns and destination the way grunt-retro
   // did: the first file mapping, with `src` left unexpanded. grunt's own
@@ -71,7 +71,7 @@ module.exports = function(grunt) {
     }
 
     // Generate our zipper
-    var zip = new JSZip();
+    var zip = new zipfile.ZipWriter();
 
     // For each of the srcFolders
     srcFolders.forEach(function (folderpath) {
@@ -103,7 +103,7 @@ module.exports = function(grunt) {
     grunt.file.mkdir(destDir);
 
     // Write out the content
-    var output = await zip.generateAsync({type: 'nodebuffer', compression: data.compression});
+    var output = zip.generate({compression: data.compression});
     fs.writeFileSync(dest, output);
 
     // Fail task if errors were logged.
@@ -129,6 +129,29 @@ module.exports = function(grunt) {
         router = data.router || echo,
         checkCRC32 = data.checkCRC32 !== false;
 
+    // Every write must stay inside `dest`, however the archive names its entries
+    // ("zip slip"): reject `../` and absolute names, symlinks that point outside, and
+    // files that would be written through a symlink an earlier entry created.
+    var destRoot = path.resolve(dest);
+    function isInside(root, target) {
+      var rel = path.relative(root, target);
+      return rel === '' || (rel.split(path.sep)[0] !== '..' && !path.isAbsolute(rel));
+    }
+    function assertInside(target, entryName) {
+      if (!isInside(destRoot, target)) {
+        throw new Error('Refusing to extract "' + entryName + '": it would be written outside "' + dest + '"');
+      }
+      // Resolve whatever already exists on the way there, to catch writes through symlinks
+      var existing = target;
+      while (!fs.existsSync(existing) && path.dirname(existing) !== existing) {
+        existing = path.dirname(existing);
+      }
+      var realDest = fs.existsSync(destRoot) ? fs.realpathSync(destRoot) : destRoot;
+      if (fs.existsSync(existing) && !isInside(realDest, fs.realpathSync(existing)) && isInside(destRoot, existing)) {
+        throw new Error('Refusing to extract "' + entryName + '": it would be written through a symlink pointing outside "' + dest + '"');
+      }
+    }
+
     // Iterate over the srcFiles
     var filesWritten = false;
     for (var filepath of srcFiles) {
@@ -136,23 +159,20 @@ module.exports = function(grunt) {
       var input = fs.readFileSync(filepath);
 
       // Unzip it
-      var zip = await JSZip.loadAsync(input, {checkCRC32: checkCRC32});
-
-      // Pluck out the files
-      var files = zip.files,
-          filenames = Object.getOwnPropertyNames(files);
+      var entries = zipfile.readZip(input, {checkCRC32: checkCRC32});
 
       // Iterate over the files
-      for (var filename of filenames) {
+      for (var fileObj of entries) {
         // Find the content
-        var fileObj = files[filename],
-            content = await fileObj.async('nodebuffer'),
+        var filename = fileObj.name,
+            content = fileObj.data,
             routedName = router(filename);
 
         // If there is a file path (allows for skipping)
         if (routedName) {
           // Determine the filepath
           var filepath = path.join(dest, routedName);
+          assertInside(path.resolve(filepath), filename);
           filesWritten = true;
 
           // If the routedName ends in a `/`, treat it as a/an (empty) directory
@@ -168,6 +188,9 @@ module.exports = function(grunt) {
             grunt.file.mkdir(fileDir);
             if ((fileObj.unixPermissions & 0xf000) === 0xa000) {
               var target = content.toString('utf8');
+              if (!isInside(destRoot, path.resolve(path.dirname(filepath), target))) {
+                throw new Error('Refusing to extract "' + filename + '": it is a symlink pointing outside "' + dest + '"');
+              }
               grunt.verbose.writeln('Creating symbolic link from: "' + filepath + '" to "' + target + '"');
               // fs.symlinkSync throws EEXIST if a file with the same name as the link already exists
               try {
