@@ -85,4 +85,58 @@ describe('A grunt `unzip` task', function () {
       assert.ok(fs.existsSync(actual('bad_crc_unchecked/test_files/file.js')));
     });
   });
+
+  describe('given entries that escape `dest` ("zip slip")', function () {
+    var zipfile = require('../lib/zipfile');
+
+    // Mark an entry as a Unix symlink (mode 0120777) in the central directory
+    function asSymlink(archive, name) {
+      var nameBuf = Buffer.from(name);
+      for (var pos = archive.lastIndexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02])); pos >= 0;
+        pos = archive.lastIndexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]), pos - 1)) {
+        var len = archive.readUInt16LE(pos + 28);
+        if (archive.subarray(pos + 46, pos + 46 + len).equals(nameBuf)) {
+          archive.writeUInt8(3, pos + 5);
+          archive.writeUInt32LE((0o120777 << 16) >>> 0, pos + 38);
+          return archive;
+        }
+      }
+      throw new Error('no central entry for ' + name);
+    }
+
+    before(function () {
+      fs.mkdirSync(actual('slip'), {recursive: true});
+      fs.writeFileSync(actual('slip_dotdot.zip'),
+        new zipfile.ZipWriter().file('../escaped.txt', 'pwned').generate());
+      fs.writeFileSync(actual('slip_symlink.zip'),
+        asSymlink(new zipfile.ZipWriter().file('link', '../..').generate(), 'link'));
+    });
+
+    it('refuses a `../` entry and writes nothing outside', function () {
+      var result = h.grunt(['unzip:slip-dotdot']);
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stdout, /outside/);
+      assert.strictEqual(fs.existsSync(actual('slip/escaped.txt')), false);
+    });
+
+    it('refuses a symlink that points outside', function () {
+      var result = h.grunt(['unzip:slip-symlink']);
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stdout, /symlink pointing outside/);
+      assert.strictEqual(fs.existsSync(actual('slip/dest/link')), false);
+    });
+
+    it('refuses to write through a symlink already in `dest`', {skip: process.platform === 'win32'}, function () {
+      fs.mkdirSync(actual('slip/dest'), {recursive: true});
+      fs.mkdirSync(actual('slip/outside'), {recursive: true});
+      fs.rmSync(actual('slip/dest/out'), {force: true});
+      fs.symlinkSync('../outside', actual('slip/dest/out'));
+      fs.writeFileSync(actual('slip_through_symlink.zip'),
+        new zipfile.ZipWriter().file('out/escaped.txt', 'pwned').generate());
+      var result = h.grunt(['unzip:slip-through-symlink']);
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stdout, /through a symlink/);
+      assert.strictEqual(fs.existsSync(actual('slip/outside/escaped.txt')), false);
+    });
+  });
 });
