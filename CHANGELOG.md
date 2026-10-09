@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/unabandoned/grunt-zip/compare/grunt-zip-v1.1.0...grunt-zip-v1.1.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* drop jszip again, and guard unzip against zip slip ([#6](https://github.com/unabandoned/grunt-zip/issues/6)) ([42336a0](https://github.com/unabandoned/grunt-zip/commit/42336a081fb888546a2127268e72e7e1a4cf429b))
+
 ## [1.1.0](https://github.com/unabandoned/grunt-zip/compare/grunt-zip-v1.0.0...grunt-zip-v1.1.0) (2026-10-08)
 
 
